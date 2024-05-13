@@ -88,6 +88,12 @@ async function run() {
         const result = await jobCollection.deleteOne(query);
         res.send(result);
     })
+
+    //Submit Application
+    app.post('/appliedJob',async(req,res)=>{
+        const appliedJob = req.body;
+        console.log(appliedJob);
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
