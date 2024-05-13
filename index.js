@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const { ObjectId } = require('mongodb/lib/bson');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -30,23 +31,61 @@ async function run() {
 
     const jobCollection = client.db('careerDB').collection('job');
 
-    // app.get('/job',async(req,res)=>{
-    //     const cursor = jobCollection.find();
-    //     const result = await cursor.toArray();
-    //     res.send(result);
-    // })
-    // app.get('/job/:id',async(req,res)=>{
-    //     const id = req.params.id;
-    //     const query = {_id: new ObjectId(id)}
-    //     const result = await jobCollection.findOne(query);
-    //     res.send(result);
-    // })
-
+    //--------CREATE----SECTION--------
     //add A new Job
     app.post('/job',async(req,res)=>{
         const newJob = req.body;
         console.log(newJob);
         const result = await jobCollection.insertOne(newJob);
+        res.send(result);
+    })
+
+    //---------READ----SECTION-----
+    //all Jobs section
+    app.get('/job',async(req,res)=>{
+        const cursor = jobCollection.find();
+        const result = await cursor.toArray();
+        res.send(result);
+    })
+    // job -----DETAILS------
+    app.get('/job/:id',async(req,res)=>{
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)}
+        const result = await jobCollection.findOne(query);
+        res.send(result);
+    })
+    //myJobs-------
+    app.get("/myJobs/:email", async(req,res)=>{
+        const query = {email: req.params.email }
+        const result = await jobCollection.find(query).toArray();
+        res.send(result);
+    })
+
+    //Update Job-------
+    app.put('/job/:id', async(req,res)=>{
+        const id = req.params.id;
+        const filter = {_id: new ObjectId(id)}
+        const options = {upsert: true};
+        const updatedJob = req.body;
+        const job = {
+            $set:{
+                 photo: updatedJob.photo,
+                 job: updatedJob.job,
+                  description: updatedJob.description,
+                  category: updatedJob.category,
+                  postdate: updatedJob.postdate,
+                  range: updatedJob.range,
+                  deadline: updatedJob.deadline,
+            }
+        }
+        const result = await jobCollection.updateOne(filter,job,options);
+        res.send(result);
+    })
+    //DELETE JOB-------
+    app.delete('/job/:id',async(req,res)=>{
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)}
+        const result = await jobCollection.deleteOne(query);
         res.send(result);
     })
     // Send a ping to confirm a successful connection
