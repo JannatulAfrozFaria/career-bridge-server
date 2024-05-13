@@ -30,8 +30,16 @@ async function run() {
     await client.connect();
 
     const jobCollection = client.db('careerDB').collection('job');
+    const appliedJobCollection = client.db('careerDB').collection('appliedJob');
+    const jobCategoryCollection = client.db('careerDB').collection('jobCategory');
 
-    //--------CREATE----SECTION--------
+    //-------HOME PAGE-----JOB CATEGORY SECTION-----//
+    app.get('/jobCategory',async(req,res)=>{
+        const cursor = jobCategoryCollection.find();
+        const result = await cursor.toArray();
+        res.send(result);
+     })
+    //--------CREATE----SECTION--------//
     //add A new Job
     app.post('/job',async(req,res)=>{
         const newJob = req.body;
@@ -90,10 +98,14 @@ async function run() {
     })
 
     //Submit Application
-    app.post('/appliedJob',async(req,res)=>{
+    app.post('/appliedJobs',async(req,res)=>{
         const appliedJob = req.body;
         console.log(appliedJob);
+        const result = await appliedJobCollection.insertOne(appliedJob);
+        res.send(result);
     })
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
