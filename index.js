@@ -108,7 +108,7 @@ async function run() {
         const result = await userCollection.insertOne(user);
         res.send(result);
     })
-    //step-----2
+    //step-----2--------
     app.get('/user' , async (req,res)=>{
         const cursor = userCollection.find();
         const users = await cursor.toArray();
