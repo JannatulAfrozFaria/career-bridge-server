@@ -31,14 +31,9 @@ async function run() {
 
     const jobCollection = client.db('careerDB').collection('job');
     const appliedJobCollection = client.db('careerDB').collection('appliedJob');
-    const jobCategoryCollection = client.db('careerDB').collection('jobCategory');
+    const userCollection = client.db('careerDB').collection('user');
+    // const jobCategoryCollection = client.db('careerDB').collection('jobCategory');
 
-    //-------HOME PAGE-----JOB CATEGORY SECTION-----//
-    app.get('/jobCategory',async(req,res)=>{
-        const cursor = jobCategoryCollection.find();
-        const result = await cursor.toArray();
-        res.send(result);
-     })
     //--------CREATE----SECTION--------//
     //add A new Job
     app.post('/job',async(req,res)=>{
@@ -102,6 +97,15 @@ async function run() {
         const appliedJob = req.body;
         console.log(appliedJob);
         const result = await appliedJobCollection.insertOne(appliedJob);
+        res.send(result);
+    })
+
+    //API ------For USER--------
+    //receiving data from register.jsx
+    app.post ('/user',async (req,res)=>{
+        const user = req.body;
+        console.log(user);
+        const result = await userCollection.insertOne(user);
         res.send(result);
     })
 
