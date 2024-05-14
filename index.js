@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const { ObjectId } = require('mongodb/lib/bson');
 require('dotenv').config()
@@ -113,6 +114,15 @@ async function run() {
         const cursor = userCollection.find();
         const users = await cursor.toArray();
         res.send(users);
+    })
+
+    //-----USING JWT--------
+    app.post('/jwt', async (req,res)=>{
+        const user = req.body;
+        console.log(user);
+        //token generation with jwt
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'} )
+        res.send(token);
     })
 
     // Send a ping to confirm a successful connection
