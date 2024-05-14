@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const { ObjectId } = require('mongodb/lib/bson');
 require('dotenv').config()
@@ -8,8 +9,12 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 //middleware
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:5174'],
+    credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 console.log(process.env.CAREER_PASS) //
 
@@ -25,6 +30,31 @@ const client = new MongoClient(uri, {
   }
 });
 
+//middlewares initiated by Us
+const logger = async(req,res,next)=>{
+    console.log('called', req.hostname,req.originalUrl,req.method )
+    next();
+}
+const verifyToken = async(req,res,next) =>{
+    const token = req?.cookies?.token;
+    console.log('value of token in middleware: ' , token)
+    //if no token is available
+    if(!token){
+        return res.status(401).send({message: 'not authorized'})
+    }
+    //verifying jwt
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err,decoded)=>{
+        //error
+        if (err){
+            console.log(err);
+            return res.status(401).send({message: 'unauthorized access'})
+        }
+        //if token is valid, then it would be decoded
+        console.log('value in the token', decoded)
+        req.user = decoded;
+        next();
+    })
+}
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -34,6 +64,27 @@ async function run() {
     const appliedJobCollection = client.db('careerDB').collection('appliedJob');
     const userCollection = client.db('careerDB').collection('user');
     // const jobCategoryCollection = client.db('careerDB').collection('jobCategory');
+
+      //-----USING JWT--------
+      app.post('/jwt', logger, async (req,res)=>{
+        const user = req.body;
+        console.log( 'user for token', user);
+        //token generation with jwt
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'} )
+        
+        res.cookie('token',token,{
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
+        })
+        .send({success: true})
+    })
+
+    app.post('/logout',async(req,res)=>{
+        const user = req.body;
+        console.log('logging out', user)
+        res.clearCookie('token', {maxAge: 0} ).send({success: true})
+    })
 
     //--------CREATE----SECTION--------//
     //add A new Job
@@ -46,20 +97,27 @@ async function run() {
 
     //---------READ----SECTION-----
     //all Jobs section
-    app.get('/job',async(req,res)=>{
+    app.get('/job', logger, async(req,res)=>{
+        //using -----JWT-----START-----///
+        // console.log('token of Job By Category', req.cookies.token);
+        //--------  JWT CODE ENDS--------//
         const cursor = jobCollection.find();
         const result = await cursor.toArray();
         res.send(result);
     })
+    
+  
+
     // job -----DETAILS------
-    app.get('/job/:id',async(req,res)=>{
+    app.get('/job/:id', logger, async(req,res)=>{
+        // console.log('cook cookies',req.cookies)
         const id = req.params.id;
         const query = {_id: new ObjectId(id)}
         const result = await jobCollection.findOne(query);
         res.send(result);
     })
     //myJobs-------
-    app.get("/myJobs/:email", async(req,res)=>{
+    app.get("/myJobs/:email",async(req,res)=>{
         const query = {email: req.params.email }
         const result = await jobCollection.find(query).toArray();
         res.send(result);
@@ -116,14 +174,6 @@ async function run() {
         res.send(users);
     })
 
-    //-----USING JWT--------
-    app.post('/jwt', async (req,res)=>{
-        const user = req.body;
-        console.log(user);
-        //token generation with jwt
-        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'} )
-        res.send(token);
-    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
